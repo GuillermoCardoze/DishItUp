@@ -2,9 +2,9 @@ from sqlalchemy_serializer import SerializerMixin
 from sqlalchemy.ext.associationproxy import association_proxy
 from datetime import datetime, timezone
 from sqlalchemy.orm import validates
+from sqlalchemy.ext.hybrid import hybrid_property
 
 from config import db, flask_bcrypt
-from sqlalchemy.ext.hybrid import hybrid_property
 
 # Models go here!
 # Association table for users and favorite recipes (many-to-many)
@@ -29,13 +29,7 @@ class User(db.Model, SerializerMixin):
     received_messages = db.relationship('Message', foreign_keys='Message.receiver_id', backref='receiver', lazy=True)
 
     #Serialize Rules
-    serialize_rules = ('-password_hash', '-recipes.user', '-sent_messages.sender', '-received_messages.receiver')
-
-    # def set_password(self, password):
-    #     self.password_hash = bcrypt.generate_password_hash(password).decode('utf-8')
-
-    # def check_password(self, password):
-    #     return bcrypt.check_password_hash(self.password_hash, password)
+    serialize_rules = ('-_password_hash', '-recipes.user', '-sent_messages.sender', '-received_messages.receiver')
 
     @validates('email')
     def validate_email(self, key, email):
@@ -48,22 +42,18 @@ class User(db.Model, SerializerMixin):
         if len(username) < 3:
             raise ValueError('Username must be at least 3 characters long')
         return username
-
+    
     @hybrid_property
-    def password(self):
-        raise AttributeError("Passwords are private, set-only")
+    def password_hash(self):
+        return self._password_hash
+    
+    @password_hash.setter
+    def password(self, password):
+        password_hash = flask_bcrypt.generate_password_hash(password.encode('utf-8'))
+        self._password_hash = password_hash.decode("utf-8")
 
-    @password.setter
-    def password(self, password_to_validate):
-        if not isinstance(password_to_validate, str):
-            raise TypeError("password myst be a string")
-        if not 10 < len(password_to_validate) < 20:
-            raise ValueError("passworkd must be a string between 10 and 20 characters long")
-        hashed_password = flask_bcrypt.generate_password_hash(password_to_validate).decode("utf-8")
-        self._password_hash = hashed_password
-
-    def authenticate(self, password_to_check):
-        return flask_bcrypt.check_password_hash(self._password_hash, password_to_check)
+    def authenticate(self, password):
+        return flask_bcrypt.check_password_hash(self.password_hash, password.encode("utf-8"))
 
 
 class Dish(db.Model, SerializerMixin):
