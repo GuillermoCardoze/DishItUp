@@ -7,7 +7,6 @@ export function UserProvider({ children }) {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Check if user is already logged in
         fetch("/check_session")
             .then((res) => (res.ok ? res.json() : Promise.reject()))
             .then((data) => setUser(data))
@@ -29,8 +28,18 @@ export function UserProvider({ children }) {
         return fetch("/logout", { method: "DELETE" }).then(() => setUser(null));
     }
 
+    function signup(username, email, password) {
+        return fetch("/signup", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username, email, password }),
+        })
+            .then((res) => (res.ok ? res.json() : Promise.reject("Signup failed")))
+            .then((data) => setUser(data));
+    }
+
     return (
-        <UserContext.Provider value={{ user, login, logout, loading }}>
+        <UserContext.Provider value={{ user, login, logout, signup, loading }}>
             {children}
         </UserContext.Provider>
     );

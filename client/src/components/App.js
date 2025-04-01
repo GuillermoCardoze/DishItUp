@@ -1,9 +1,11 @@
-import { useContext } from "react";
+import { useContext, useState } from "react";
 import { UserContext } from "./UserContext";
 import Login from "./Login";
+import Signup from "./Signup";
 
 function App() {
     const { user, logout, loading } = useContext(UserContext);
+    const [showSignup, setShowSignup] = useState(false);
 
     if (loading) return <h1>Loading...</h1>;
 
@@ -15,7 +17,15 @@ function App() {
                     <button onClick={logout}>Logout</button>
                 </>
             ) : (
-                <Login />
+                <>
+                    {showSignup ? <Signup /> : <Login />}
+                    <p>
+                        {showSignup ? "Already have an account?" : "Don't have an account?"}{" "}
+                        <button onClick={() => setShowSignup(!showSignup)}>
+                            {showSignup ? "Login" : "Sign Up"}
+                        </button>
+                    </p>
+                </>
             )}
         </div>
     );
