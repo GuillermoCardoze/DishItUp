@@ -3,6 +3,7 @@
 # Remote library imports
 from flask import request, session
 from flask_restful import Resource
+from sqlalchemy.exc import IntegrityError
 
 # Local imports
 from config import app, db, api
@@ -10,6 +11,38 @@ from config import app, db, api
 from models import User, Recipe, Message, Dish
 
 # Views go here!
+class Dishes(Resource):
+    def get(self):
+        if session.get('user_id'):
+            dishes = Dish.query.filter_by(user_id=session['user_id']).all()
+            return [dish.to_dict() for dish in dishes], 200
+        return {'error': '401 Unauthorized'}, 401
+    
+    def post(self):
+        user_id = session.get('user_id')
+        if user_id:
+            request_json = request.get_json()
+
+            name = request_json['name']
+            cuisine = request_json['cuisine']
+
+            try:
+                dish = Dish(
+                    name=name, 
+                    cuisine=cuisine,
+                    user_id=user_id
+                    )
+
+                db.session.add(dish)
+                db.session.commit()
+                return dish.to_dict(),201
+            
+            except IntegrityError:
+
+                return {'error': "422 Unprocessable Entity"},422
+        return {'error': '401 Unauthorized'}, 401
+
+api.add_resource(Dishes, '/dishes')
 
 class Signup(Resource):
     def post(self):
@@ -67,12 +100,12 @@ class Logout(Resource):
 api.add_resource(Logout, '/logout')
 
 
-@app.before_request
-def check_session():
-    if "user_id" not in session:
-        session["user_id"] = None
-    else:
-        print("User is logged in:", session["user_id"])  # Debugging info
+# @app.before_request
+# def check_session():
+#     if "user_id" not in session:
+#         session["user_id"] = None
+#     else:
+#         print("User is logged in:", session["user_id"])  # Debugging info
 
 
 if __name__ == '__main__':
