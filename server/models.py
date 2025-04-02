@@ -23,13 +23,15 @@ class User(db.Model, SerializerMixin):
     _password_hash = db.Column("password_hash", db.String)    
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
-    recipes = db.relationship('Recipe', backref='user', lazy=True)
+    # recipes = db.relationship('Recipe', backref='user', lazy=True)
+    recipes = db.relationship('Recipe', backref='user', lazy='select')
     favorite_recipes = db.relationship('Recipe', secondary=user_favorite_recipes, backref='favorited_by')
     sent_messages = db.relationship('Message', foreign_keys='Message.sender_id', backref='sender', lazy=True)
     received_messages = db.relationship('Message', foreign_keys='Message.receiver_id', backref='receiver', lazy=True)
 
     #Serialize Rules
-    serialize_rules = ('-_password_hash', '-recipes.user', '-sent_messages.sender', '-received_messages.receiver')
+    # serialize_rules = ('-_password_hash', '-recipes.user', '-sent_messages.sender', '-received_messages.receiver')
+    serialize_rules = ('-_password_hash', '-recipes', '-sent_messages', '-received_messages')
 
     @validates('email')
     def validate_email(self, key, email):
@@ -58,7 +60,8 @@ class User(db.Model, SerializerMixin):
 
 class Dish(db.Model, SerializerMixin):
     __tablename__ = 'dishes'
-    serialize_rules = ('-recipes.dish',)
+    # serialize_rules = ('-recipes.dish',)
+    serialize_rules = ('-recipes',)
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
@@ -76,7 +79,9 @@ class Dish(db.Model, SerializerMixin):
 
 class Recipe(db.Model, SerializerMixin):
     __tablename__ = 'recipes'
-    serialize_rules = ('-user.recipes', '-dish.recipes')
+    # serialize_rules = ('-user.recipes', '-dish.recipes')
+    # serialize_rules = ('-user', '-dish')
+    serialize_rules = ('-sender', '-receiver')
 
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)

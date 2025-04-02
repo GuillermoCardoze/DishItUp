@@ -20,7 +20,7 @@ export function UserProvider({ children }) {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ username, password }),
         })
-            .then((res) => (res.ok ? res.json() : Promise.reject("Invalid credentials")))
+            .then((res) => (res.ok ? res.json() : Promise.reject("Invalid User.")))
             .then((data) => setUser(data));
     }
 
